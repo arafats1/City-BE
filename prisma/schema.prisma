@@ -1,0 +1,210 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model SignUp {
+  id        String       @id @default(uuid())
+  email     String?       @unique
+  role      String       @default("patient")
+  password  String?
+  googleId  String?
+  createdAt DateTime     @default(now())
+  tokens    ResetToken[]
+  doctor    Doctor?
+  hospital  Hospital?
+  patient   Patient?
+}
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  userId    String?
+  user      SignUp?  @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Doctor {
+  id                        String               @id @default(uuid())
+  aboutAndBackground        String
+  fullName                  String
+  gender                    String
+  nationalOrLicenceNo       String
+  dateOfBirth               String
+  medicalLicenceInformation String
+  yearsOfExperience         String
+  email                     String               @unique
+  contact                   String
+  facilityMap               String?
+  languages                 String
+  speciality                String
+  workingHours              String
+  appointmentAvailability   String
+  timeZone                  String
+  doctorId                  String               @unique
+  signUp                    SignUp               @relation(fields: [doctorId], references: [id])
+  images                    Image[]
+  services                  Service[]
+  payments                  PaymentInformation[]
+  appointments              Appointment[]
+  paymentDetails            PaymentDetail[]
+  credentials               Credential[]
+}
+
+model Hospital {
+  id               String               @id @default(uuid())
+  name             String
+  address          String
+  location         String
+  facilities       String
+  contact          String
+  emergenceContact String
+  email            String               @unique
+  website          String
+  licenceNumber    String               @unique
+  operatingHours   String
+  paymentMethods   String
+  hospitalId       String               @unique
+  signUp           SignUp               @relation(fields: [hospitalId], references: [id])
+  images           Image[]
+  services         Service[]
+  payments         PaymentInformation[]
+  appointments     Appointment[]
+  paymentDetails   PaymentDetail[]
+  credentials      Credential[]
+}
+
+model Credential {
+  id         String    @id @default(uuid())
+  name       String
+  url        String
+  doctor     Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId   String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  hospitalId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([doctorId])
+  @@index([hospitalId])
+}
+
+model Patient {
+  id                String               @id @default(uuid())
+  fullName          String
+  accountStatus     String
+  dateOfBirth       String
+  contact           String
+  email             String
+  address           String
+  medicalHistory    String
+  currentMedication String
+  allergies         String
+  signUp            SignUp               @relation(fields: [patientId], references: [id])
+  patientId         String               @unique
+  images            Image[]
+  services          Service[]
+  payments          PaymentInformation[]
+  appointments      Appointment[]
+}
+
+model Image {
+  id         String    @id @default(uuid())
+  url        String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  doctor     Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId   String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  hospitalId String?
+  patient    Patient?  @relation(fields: [patientId], references: [id])
+  patientId  String?
+
+  @@index([patientId])
+  @@index([hospitalId])
+  @@index([doctorId])
+}
+
+model Service {
+  id           String               @id @default(uuid())
+  name         String
+  price        String
+  doctor       Doctor?              @relation(fields: [doctorId], references: [id])
+  doctorId     String?
+  hospital     Hospital?            @relation(fields: [hospitalId], references: [id])
+  hospitalId   String?
+  patient      Patient?             @relation(fields: [patientId], references: [id])
+  patientId    String?
+  payments     PaymentInformation[]
+  appointments Appointment[]
+
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([patientId])
+}
+
+model PaymentInformation {
+  id             String    @id @default(uuid())
+  amount         String
+  status         String
+  patient        Patient?  @relation(fields: [patientId], references: [id])
+  patientId      String?
+  doctor         Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId       String?
+  hospital       Hospital? @relation(fields: [hospitalId], references: [id])
+  hospitalId     String?
+  service        Service?  @relation(fields: [serviceId], references: [id])
+  serviceId      String?
+  proofOfPayment String
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([serviceId])
+}
+
+model Appointment {
+  id          String    @id @default(uuid())
+  date        String
+  time        String
+  status      String
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  patientId   String?
+  doctor      Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId    String?
+  hospital    Hospital? @relation(fields: [hospitalId], references: [id])
+  hospitalId  String?
+  service     Service?  @relation(fields: [serviceId], references: [id])
+  serviceId   String?
+  meetingLink String
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([serviceId])
+}
+
+model PaymentDetail {
+  id                String    @id @default(uuid())
+  accountHolderName String?
+  accountNumber     String?
+  bankName          String?
+  branchName        String?
+  mobileNumber      String?
+  doctor            Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId          String?
+  hospital          Hospital? @relation(fields: [hospitalId], references: [id])
+  hospitalId        String?
+  proofOfPayment    String
+
+  @@index([doctorId])
+  @@index([hospitalId])
+}
